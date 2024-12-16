@@ -13,5 +13,14 @@ internal class Program
         {
             Console.WriteLine(book);
         }
+
+        IEnumerable<Book> aventureBooks = from book in books
+                                          where book.Type == "Aventure"
+                                          select book;
+
+        foreach (Book book in aventureBooks)
+        {
+            Console.WriteLine(book);
+        }
     }
 }
