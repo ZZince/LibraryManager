@@ -10,8 +10,6 @@ namespace BusinessObjects.Entity
         public int Rate { get; set; }
         public Author Author { get; set; }
 
-        public static List<Book> _allBooks = new List<Book>();
-
         public Book(int id, string name, TypeLivre type, int page, int rate, Author author)
         {
             Id = id;
@@ -20,8 +18,6 @@ namespace BusinessObjects.Entity
             Page = page;
             Rate = rate;
             Author = author;
-
-            _allBooks.Add(this);
         }
 
         public override string ToString()
@@ -29,5 +25,4 @@ namespace BusinessObjects.Entity
             return $"Book: {Name} - Type: {Type} - Page: {Page} - Rate: {Rate} - Author: {Author}";
         }
     }
-
 }

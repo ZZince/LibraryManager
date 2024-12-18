@@ -1,66 +1,96 @@
 ﻿using BusinessObjects.Entity;
 using BusinessObjects.Enum;
 using DataAccessLayer.Repository;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Services.Services;
-internal class Program
+
+public class Program
 {
-    private static void Main(string[] args)
+    static IHost CreateDefaultBuilder()
     {
-        Console.WriteLine("Hello, World!");
+        var builder = Host.CreateDefaultBuilder()
+            .ConfigureServices(services =>
+            {
+                // Pour les livres
+                services.AddSingleton<IGenericRepository<Book>, GenericRepository<Book>>();
+                services.AddSingleton<IBookRepositoryManager, BookRepositoryManager>();
+
+                // Pour les bibliothèques
+                services.AddSingleton<IGenericRepository<Library>, GenericRepository<Library>>();
+                services.AddSingleton<IRepositoryManager<Library>, RepositoryManager<Library>>();
+
+                // Pour les auteurs
+                services.AddSingleton<IGenericRepository<Author>, GenericRepository<Author>>();
+                services.AddSingleton<IRepositoryManager<Author>, RepositoryManager<Author>>();
+            });
+
+        return builder.Build();
+    }
+
+    static void Main(string[] args)
+    {
+        var host = CreateDefaultBuilder();
 
         // Création des auteurs
-        Author author1 = new Author(1, "Auteur 1", "Nom 1");
-        Author author2 = new Author(2, "Auteur 2", "Nom 2");
+        Author author1 = new Author(1, "Auteur", "Un");
+        Author author2 = new Author(2, "Auteur", "Deux");
 
         // Création des livres
-        Book book1 = new Book(1, "Livre d'aventure", TypeLivre.Aventure, 300, 5, author1);
-        Book book2 = new Book(2, "Livre de science-fiction", TypeLivre.ScienceFiction, 250, 4, author2);
-        Book book3 = new Book(3, "Livre de romance", TypeLivre.Romance, 200, 3, author1);
+        Book book1 = new Book(1, "Les Aventures de Tintin", TypeLivre.Aventure, 320, 10, author1);
+        Book book2 = new Book(2, "Science Fiction Épique", TypeLivre.ScienceFiction, 250, 5, author2);
+        Book book3 = new Book(3, "Romance Tropicale", TypeLivre.Romance, 200, 7, author1);
 
         // Création de la bibliothèque
         Library library = new Library(1, "Bibliothèque Centrale", "123 Rue Principale");
         library.Books = new List<Book> { book1, book2, book3 };
 
-        // Utilisation de la méthode GetAll
-        List<Library> allLibraries = LibraryRepository.GetAll();
-        Console.WriteLine("Toutes les bibliothèques:");
-        foreach (var lib in allLibraries)
+        using (var serviceScope = host.Services.CreateScope())
         {
-            Console.WriteLine(lib);
-        }
+            var services = serviceScope.ServiceProvider;
 
-        // Utilisation de la méthode Get avec l'ID
-        try
-        {
-            Library specificLibrary = LibraryRepository.Get(1);
-            Console.WriteLine($"\nBibliothèque avec ID 1: Nom: {specificLibrary.Name}, Adresse: {specificLibrary.Adress}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+            try
+            {
+                var bookManager = services.GetRequiredService<IBookRepositoryManager>();
+                var libraryManager = services.GetRequiredService<IRepositoryManager<Library>>();
+                var authorManager = services.GetRequiredService<IRepositoryManager<Author>>();
 
-        // Utilisation de CatalogManager
+                // Ajout des données
+                libraryManager.Repository.Add(library);
+                authorManager.Repository.Add(author1);
+                authorManager.Repository.Add(author2);
+                bookManager.Repository.Add(book1);
+                bookManager.Repository.Add(book2);
+                bookManager.Repository.Add(book3);
 
-        // Récupérer tout le catalogue
-        List<Book> catalog = CatalogManager.GetCatalog();
-        Console.WriteLine("\nCatalogue complet:");
-        foreach (var book in catalog)
-        {
-            Console.WriteLine(book);
+                // Affichage de toutes les bibliothèques
+                List<Library> allLibraries = libraryManager.GetAll();
+                Console.WriteLine("Toutes les bibliothèques:");
+                foreach (var lib in allLibraries)
+                {
+                    Console.WriteLine($"ID: {lib.Id}, Nom: {lib.Name}, Adresse: {lib.Adress}");
+                }
+
+                // Affichage des livres d'aventure
+                List<Book> adventureBooks = bookManager.GetCatalog(TypeLivre.Aventure);
+                Console.WriteLine("\nLivres d'aventure:");
+                foreach (var book in adventureBooks)
+                {
+                    Console.WriteLine(book);
+                }
+
+                // Recherche d'un livre spécifique par ID
+                Book specificBook = bookManager.Find(1);
+                Console.WriteLine($"\nLivre avec ID=1: {specificBook}");
+
+                Console.ReadLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur: {ex.Message}");
+                Console.ReadLine();
+            }
         }
-
-        // Récupérer les livres d'un type spécifique
-        List<Book> adventureBooks = CatalogManager.GetBooks(TypeLivre.Aventure);
-        Console.WriteLine("\nLivres d'aventure:");
-        foreach (var book in adventureBooks)
-        {
-            Console.WriteLine(book);
-        }
-
-        // Trouver un livre par ID
-        Console.WriteLine("\nLivre avec ID 1:");
-        Book specificBook = CatalogManager.FindBook(1);
-        Console.WriteLine(specificBook);
     }
+
 }
