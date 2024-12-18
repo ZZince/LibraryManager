@@ -4,6 +4,8 @@ using DataAccessLayer.Repository;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Services.Services;
+using Microsoft.EntityFrameworkCore;
+using DataAccessLayer.Context;
 
 public class Program
 {
@@ -23,6 +25,9 @@ public class Program
                 // Pour les auteurs
                 services.AddSingleton<IGenericRepository<Author>, GenericRepository<Author>>();
                 services.AddSingleton<IRepositoryManager<Author>, RepositoryManager<Author>>();
+
+                services.AddDbContext<LibraryContext>(options =>
+                options.UseSqlite("Data Source=C:\\Users\\Flo\\source\\repos\\LibraryManager\\LibraryManager.app\\library.db;"));
             });
 
         return builder.Build();
@@ -31,6 +36,7 @@ public class Program
     static void Main(string[] args)
     {
         var host = CreateDefaultBuilder();
+        /*
 
         // Création des auteurs
         Author author1 = new Author(1, "Auteur", "Un");
@@ -44,11 +50,19 @@ public class Program
         // Création de la bibliothèque
         Library library = new Library(1, "Bibliothèque Centrale", "123 Rue Principale");
         library.Books = new List<Book> { book1, book2, book3 };
+        */
 
         using (var serviceScope = host.Services.CreateScope())
         {
             var services = serviceScope.ServiceProvider;
 
+            var libraryContext = services.GetRequiredService<LibraryContext>();
+
+            foreach (var book in libraryContext.Books)
+            {
+                Console.WriteLine(book);
+            }
+            /*
             try
             {
                 var bookManager = services.GetRequiredService<IBookRepositoryManager>();
@@ -89,8 +103,10 @@ public class Program
             {
                 Console.WriteLine($"Erreur: {ex.Message}");
                 Console.ReadLine();
-            }
+                }
+            } */
         }
     }
-
 }
+
+
